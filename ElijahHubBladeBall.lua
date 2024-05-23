@@ -1,6 +1,6 @@
 local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
 
-local Window = OrionLib:MakeWindow({Name = "Elijah Hub - Tower Of Hell", HidePremium = false, SaveConfig = true, IntroEnabled = false, IntroText = "Elijah Hub", ConfigFolder = "OrionTest"})
+local Window = OrionLib:MakeWindow({Name = "Elijah Hub - Blade Ball", HidePremium = false, SaveConfig = true, IntroEnabled = false, IntroText = "Elijah Hub", ConfigFolder = "OrionTest"})
 
 OrionLib:MakeNotification({
 	Name = "Elijah Hub - Blade Ball",
@@ -10,198 +10,339 @@ OrionLib:MakeNotification({
 })
 
 local Tab = Window:MakeTab({
-	Name = "Auto Parry",
+	Name = "Main",
 	Icon = "rbxassetid://4483345998",
 	PremiumOnly = false
 })
 
 local Section = Tab:AddSection({
-	Name = "Auto Parry Main"
+	Name = "Auto Parry"
 })
 
 Tab:AddButton({
 	Name = "Auto Parry",
 	Callback = function()
-      	getgenv().disable = true
-wait(.1)
-getgenv().disable = false
-function getball()
-    local ball
-    for i, v in pairs(workspace.Balls:GetChildren()) do if v.Anchored == false then ball = v end end
-return ball
+      	local function get_plr()
+  return game.Players.LocalPlayer
 end
 
-function istargeted()
-    return game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Highlight") and true or false
+local function get_plrChar()
+  local plrChar = get_plr().Character
+  if plrChar then
+    return plrChar
+  end
 end
 
-function distancefromball()
-    local dist
-    if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character.HumanoidRootPart and getball() then
-        return (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - getball().Position).Magnitude
+local function get_plrRP()
+  local plrRP = get_plrChar():FindFirstChild("HumanoidRootPart")
+  if plrRP then
+    return plrRP
+  end
+end
+
+local function playerJump()
+  pcall(function()
+    game.Players.LocalPlayer.Character.Humanoid.Jump = true
+  end)
+end
+
+local function get_PlayersNumber()
+  local Alive = workspace:WaitForChild("Alive", 20):GetChildren()
+  local PlayersNumber = 0
+  for _,v in pairs(Alive) do
+    if v and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 50 then
+      PlayersNumber = PlayersNumber + 1
     end
+  end
+  return PlayersNumber
 end
 
-function getping()
-    return game.Players.LocalPlayer:GetNetworkPing()*20
+local function get_ProxyPlayer()
+  local Players = workspace:WaitForChild("Alive"):GetChildren()
+  local Distance = math.huge
+  local plr = game.Players.LocalPlayer
+  local plrRP = plr.Character:FindFirstChild("HumanoidRootPart")
+  local Player = nil
+  
+  for _,plr1 in pairs(Players) do
+    if plr1.Name ~= plr.Name and plrRP and plr1:FindFirstChild("HumanoidRootPart") and plr1:FindFirstChild("Humanoid") and plr1.Humanoid.Health > 50 then
+      local magnitude = (plr1.HumanoidRootPart.Position - plrRP.Position).Magnitude
+      if magnitude <= Distance then
+        Distance = magnitude
+        Player = plr1
+      end
+    end
+  end
+  return Player
 end
 
-function getparrydist()
-    return math.clamp(getball().Velocity.Magnitude/2.4+getping(),15, 200)
+local function Click_Button()
+  task.spawn(function()
+    local plr = game.Players.LocalPlayer
+    local plrFind = workspace.Alive:FindFirstChild(plr.Name)
+    if plrFind then
+      local plrs = 0
+      for _,v in pairs(workspace:WaitForChild("Alive", 10):GetChildren()) do
+        plrs = plrs + 1
+      end
+      if plrs > 1 then
+        local args = {[1] = 1.5,[2] = CFrame.new(-254, 112, -119) * CFrame.Angles(-2, 0, 2),[3] = {
+        ["2617721424"] = Vector3.new(-273, -724, -20),
+        },[4] = {[1] = 910,[2] = 154}}
+        game:GetService("ReplicatedStorage").Remotes.ParryAttempt:FireServer(unpack(args))task.wait()
+      end
+    end
+  end)
 end
 
-function waituntilnottargeted()
-local timeout = false
-    spawn(function()
-wait(.8)
-timeout = true
-    end)
-    repeat wait() until not istargeted() or timeout
-end
-
-local circle = Instance.new("Part")
-circle.Shape = Enum.PartType.Ball
-circle.Material = Enum.Material.SmoothPlastic
-circle.Parent = workspace
-circle.CanCollide = false
-circle.Material = Enum.Material.ForceField
-circle.Anchored = true
-circle.CastShadow = false
-
-local last = 99999
-local spam = false
-local alrchecked = false
-
-game.Players.LocalPlayer.CharacterAdded:Connect(function()
-    spam = false
+task.spawn(function()
+  while task.wait() do
+    if getgenv().SpamClickA then
+      Click_Button()
+    end
+  end
 end)
 
-game.Players.LocalPlayer.Character.Humanoid.Died:Connect(function()
-    spam = false
-end)
-
-spawn(function()
-while wait() and not getgenv().disable do
-    xpcall(function()
-        -- if getball() then print(getparrydist()) end
-        if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then circle.CFrame = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame circle.Size = Vector3.new(getparrydist(),getparrydist(),getparrydist()) end
-if istargeted() and not alrchecked then
-    if tick() - last < .7 and distancefromball() < 70 or distancefromball() < 20  then
-        print(distancefromball())
-        print(tick() - last)
-    spam = true
-    print("spam")
-    circle.Color = Color3.new(1,0,0)
-    alrchecked = true
-    else
-        alrchecked = true
-        print("no spam")
-        spam = false
-    circle.Color = Color3.new(1,1,1)
+local function DetectSpam()
+  local Balls = workspace:WaitForChild("Balls", 20)
+  
+  local OldPos = Vector3.new()
+  local OldTick1 = tick()
+  
+  local OldBall = Balls
+  local TargetPlayer = ""
+  local SpamNum = 0
+  local BallSpeed = 0
+  local BallDistance = 0
+  
+  task.spawn(function()
+    local OldTick = tick()
+    local OldPos = Vector3.new()
+    while getgenv().DetectSpam do task.wait()
+      local plrRP = get_plrRP()
+      local Ball = Balls:FindFirstChildOfClass("Part")
+      if plrRP and Ball then
+        BallDistance = (plrRP.Position - Ball.Position).Magnitude
+        BallSpeed = (OldPos - Ball.Position).Magnitude
+        if tick() - OldTick >= 1/60 then
+          OldTick = tick()
+          OldPos = Ball.Position
+        end
+      end
     end
-    last = tick()
-elseif not istargeted() then
-    alrchecked = false
-end
-        if istargeted() == true and getball() ~= nil and distancefromball() < getparrydist() or spam and istargeted() then
-            local args = {
-        [1] = 0.5,
-        [2] = CFrame.lookAt(workspace.CurrentCamera.CFrame.p, Vector3.new(workspace.CurrentCamera.CFrame.p.X,999999999999999999999999999,workspace.CurrentCamera.CFrame.p.Z)),
-        [3] = {
-            ["HunnayyyxD"] = Vector3.new(1171.807861328125, 226.43194580078125, 85.06675720214844),
-            ["Softicey"] = Vector3.new(10073.6025390625, 640.4264526367188, 10.497177124023438),
-            ["DonPlayyz_YT"] = Vector3.new(-2097.249755859375, -391.8228759765625, -8.48858642578125),
-            ["Caryhco"] = Vector3.new(1336.871337890625, 224.7318115234375, 105.85006713867188),
-            ["ii_VaIord"] = Vector3.new(4280.7001953125, 324.5129699707031, 33.27197265625),
-            ["wayareyousoga"] = Vector3.new(-650.9739990234375, 24.628662109375, -31.402557373046875),
-            ["East_Wave"] = Vector3.new(2366.4990234375, 272.4285888671875, 51.80149841308594),
-            ["Idea_Saman100"] = Vector3.new(1856.654052734375, 224.4664306640625, 106.3294677734375),
-            ["SteveTheMan042"] = Vector3.new(-4457.2109375, -216.7236328125, -12.2535400390625),
-            ["piggy12841"] = Vector3.new(1569.9359130859375, 223.1246337890625, 109.55888366699219),
-            ["geeseofthesilly"] = Vector3.new(940.6378173828125, 556.8900146484375, 12.81744384765625),
-            ["Mariagurl_16"] = Vector3.new(797.1363525390625, 272.2474060058594, 47.91747283935547)
-        },
-        [4] = {
-            [1] = 893,
-            [2] = 618
-        }
-    }
+  end)
+  
+  while getgenv().DetectSpam do task.wait()
+    local Ball = Balls:FindFirstChildOfClass("Part")
+    local plrRP = get_plrRP()
+    local ProxyPlayer = get_ProxyPlayer()
     
-    game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("ParryAttempt"):FireServer(unpack(args))
-    if not spam then waituntilnottargeted() else wait(distancefromball()/250) end
+    if not Ball then
+      getgenv().SpamClickA = false
+    end
+  
+    if Ball and Ball:GetAttribute("realBall") and OldBall ~= Ball then
+    
+      Ball.Changed:Connect(function()task.wait()
+        local Ball = Balls:FindFirstChildOfClass("Part")
+        
+        if Ball then
+          TargetPlayer = Ball:GetAttribute("target")
+          
+          if ProxyPlayer and TargetPlayer == ProxyPlayer.Name or get_plr() and TargetPlayer == get_plr().Name then
+            SpamNum = SpamNum + 1
+          else
+            SpamNum = 0
+          end
+          
+          local args = ProxyPlayer and ProxyPlayer:FindFirstChild("HumanoidRootPart")
+          local HL1 = ProxyPlayer and ProxyPlayer:FindFirstChild("Highlight")
+          local HL2 = get_plrChar() and get_plrChar():FindFirstChild("Highlight")
+          
+          if plrRP and HL1 and args or plrRP and HL2 and args then
+            local DistancePlayer = (ProxyPlayer.HumanoidRootPart.Position - plrRP.Position).Magnitude
+            local DistanceBall = (Ball.Position - plrRP.Position).Magnitude
+            
+            if get_PlayersNumber() < 3 then
+              if DistancePlayer <= 30 and DistanceBall <= 35 and SpamNum >= 2 then
+                getgenv().SpamClickA = true
+              else
+                getgenv().SpamClickA = false
+              end
+            else
+              if DistancePlayer <= 30 and DistanceBall <= 35 and SpamNum >= 3 then
+                getgenv().SpamClickA = true
+              else
+                getgenv().SpamClickA = false
+              end
+            end
+          else
+            getgenv().SpamClickA = false
+          end
+        end
+      end)
+      OldBall = Ball
+    end
+  end
 end
-end, warn)
-end
-end)
-repeat wait() until getgenv().disable
-circle:Destroy()	
-  	end 
+
+getgenv().DetectSpam = true
+DetectSpam()
+  	end    
 })
 
 Tab:AddButton({
 	Name = "Auto Parry V2",
 	Callback = function()
-      		local Debug = false 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players = game:GetService("Players")
+      	loadstring(game:HttpGet("https://raw.githubusercontent.com/DonGabrielle/AutoDetectV4/main/MainBalls"))()
+  	end    
+})
 
-local Player = Players.LocalPlayer or Players.PlayerAdded:Wait()
-local Remotes = ReplicatedStorage:WaitForChild("Remotes", 9e9) -- A second argument in waitforchild what could it mean?
-local Balls = workspace:WaitForChild("Balls", 9e9)
+Tab:AddButton({
+	Name = "Auto Parry V3",
+	Callback = function()
+      	loadstring(game:HttpGet("https://raw.githubusercontent.com/Hosvile/Refinement/main/MC%3ABlade%20Ball%20Parry"))()
+  	end    
+})
 
--- Functions
+Tab:AddButton({
+	Name = "Auto Parry V4",
+	Callback = function()
+      	loadstring(game:HttpGet("https://raw.githubusercontent.com/Code4Zaaa/X7Project/main/Game/AutoParryOnly"))()
+  	end    
+})
 
-local function print(...) 
-    if Debug then
-        warn(...)
+Tab:AddButton({
+	Name = "Auto Parry V5",
+	Callback = function()
+      	loadstring(game:HttpGet('https://raw.githubusercontent.com/ElijahGamingRBLX/Blade-Ball/main/AutoParryV4.lua'))()
+  	end    
+})
+
+local Tab = Window:MakeTab({
+	Name = "Auto Spam",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
+})
+
+local Section = Tab:AddSection({
+	Name = "Auto Spam - Section"
+})
+
+Tab:AddButton({
+	Name = "Auto Spam",
+	Callback = function()
+      	local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local replicatedStorage = game:GetService("ReplicatedStorage")
+local runService = game:GetService("RunService")
+local parryButtonPress = replicatedStorage.Remotes.ParryButtonPress
+local ballsFolder = workspace:WaitForChild("Balls")
+
+print("Script successfully ran.")
+
+local function onCharacterAdded(newCharacter)
+    character = newCharacter
+end
+
+player.CharacterAdded:Connect(onCharacterAdded)
+
+local focusedBall = nil  
+
+local function chooseNewFocusedBall()
+    local balls = ballsFolder:GetChildren()
+    focusedBall = nil
+    for _, ball in ipairs(balls) do
+        if ball:GetAttribute("realBall") == true then
+            focusedBall = ball
+            break
+        end
     end
 end
 
-local function VerifyBall(Ball) -- Returns nil if the ball isn't a valid projectile; true if it's the right ball.
-    if typeof(Ball) == "Instance" and Ball:IsA("BasePart") and Ball:IsDescendantOf(Balls) and Ball:GetAttribute("realBall") == true then
-        return true
+chooseNewFocusedBall()
+
+local function timeUntilImpact(ballVelocity, distanceToPlayer, playerVelocity)
+    local directionToPlayer = (character.HumanoidRootPart.Position - focusedBall.Position).Unit
+    local velocityTowardsPlayer = ballVelocity:Dot(directionToPlayer) - playerVelocity:Dot(directionToPlayer)
+    
+    if velocityTowardsPlayer <= 0 then
+        return math.huge
     end
+    
+    local distanceToBeCovered = distanceToPlayer - 30
+    return distanceToBeCovered / velocityTowardsPlayer
 end
 
-local function IsTarget() -- Returns true if we are the current target.
-    return (Player.Character and Player.Character:FindFirstChild("Highlight"))
+local BASE_THRESHOLD = 0.15
+local VELOCITY_SCALING_FACTOR = 0.002
+
+local function getDynamicThreshold(ballVelocityMagnitude)
+    local adjustedThreshold = BASE_THRESHOLD - (ballVelocityMagnitude * VELOCITY_SCALING_FACTOR)
+    return math.max(0.12, adjustedThreshold)
 end
 
-local function Parry() -- Parries.
-    Remotes:WaitForChild("ParryButtonPress"):Fire()
-end
+local function checkBallDistance()
+    if not character:FindFirstChild("Highlight") then return end
+    local charPos = character.PrimaryPart.Position
+    local charVel = character.PrimaryPart.Velocity
 
--- The actual code
+    if focusedBall and not focusedBall.Parent then
+        chooseNewFocusedBall()
+    end
 
-Balls.ChildAdded:Connect(function(Ball)
-    if not VerifyBall(Ball) then
+    if not focusedBall then return end
+
+    local ball = focusedBall
+    local distanceToPlayer = (ball.Position - charPos).Magnitude
+
+    if distanceToPlayer < 10 then
+        parryButtonPress:Fire()
         return
     end
-    
-    print(`Ball Spawned: {Ball}`)
-    
-    local OldPosition = Ball.Position
-    local OldTick = tick()
-    
-    Ball:GetPropertyChangedSignal("Position"):Connect(function()
-        if IsTarget() then -- No need to do the math if we're not being attacked.
-            local Distance = (Ball.Position - workspace.CurrentCamera.Focus.Position).Magnitude 
-            local Velocity = (OldPosition - Ball.Position).Magnitude -- Fix for .Velocity not working. Yes I got the lowest possible grade in accuplacer math.
-            
-            print(`Distance: {Distance}\nVelocity: {Velocity}\nTime: {Distance / Velocity}`)
-        
-            if (Distance / Velocity) <= 13 then
-                Parry()
-            end
-        end
-        
-        if (tick() - OldTick >= 1/60) then 
-            OldTick = tick()
-            OldPosition = Ball.Position
-        end
-    end)
+
+    local timeToImpact = timeUntilImpact(ball.Velocity, distanceToPlayer, charVel)
+    local dynamicThreshold = getDynamicThreshold(ball.Velocity.Magnitude)
+
+    if timeToImpact < dynamicThreshold then
+        parryButtonPress:Fire()
+    end
+end
+
+
+
+runService.Heartbeat:Connect(function()
+    checkBallDistance()
 end)
-  	end 
+  	end    
+})
+
+Tab:AddButton({
+	Name = "Auto Spam V2",
+	Callback = function()
+      	loadstring(game:HttpGet("https://raw.githubusercontent.com/Hosvile/Refinement/main/MC%3ABlade%20Ball%20Parry%20V4.0.0"))()
+  	end    
+})
+
+Tab:AddButton({
+	Name = "Auto Spam V3",
+	Callback = function()
+      	loadstring(game:HttpGet("https://raw.githubusercontent.com/DonGabrielle/AutoDetectV4/main/MainBalls"))()
+  	end    
+})
+
+Tab:AddButton({
+	Name = "Auto Spam V4",
+	Callback = function()
+      	loadstring(game:HttpGet("https://pastebin.com/raw/t2391h1A"))()
+  	end    
+})
+
+Tab:AddButton({
+	Name = "Powerful Auto Spam",
+	Callback = function()
+      loadstring(game:HttpGet("https://pastebin.com/raw/HPNBFGSf"))()
+  	end    
 })
 
 local Tab = Window:MakeTab({
@@ -210,52 +351,167 @@ local Tab = Window:MakeTab({
 	PremiumOnly = false
 })
 
-local Section = Tab:AddSection({
-	Name = "Other Stuff"
+Tab:AddTextbox({
+	Name = "Change Walkspeed",
+	Default = "",
+	TextDisappear = true,
+	Callback = function(Value)
+	    game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = value
+	end	  
+})
+
+Tab:AddTextbox({
+	Name = "Change JumpPower",
+	Default = "",
+	TextDisappear = true,
+	Callback = function(Value)
+	game.Players.LocalPlayer.Character.Humanoid.JumpPower = value
+	end	  
+})
+
+Tab:AddTextbox({
+	Name = "Change FOV",
+	Default = "",
+	TextDisappear = true,
+	Callback = function(Value)
+	local FovNumber = value
+local Camera = workspace.CurrentCamera
+Camera.FieldOfView = FovNumber
+	end	  
+})
+
+Tab:AddToggle({
+	Name = "Noclip",
+	Default = false,
+	Callback = function(Value)
+	local Noclip = nil
+local Clip = nil
+function noclip()
+ Clip = false
+ local function Nocl()
+  if Clip == false and game.Players.LocalPlayer.Character ~= nil then
+   for _,v in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
+    if v:IsA('BasePart') and v.CanCollide and v.Name ~= floatName then
+     v.CanCollide = false
+    end
+   end
+  end
+  wait(0.21) -- basic optimization
+ end
+ Noclip = game:GetService('RunService').Stepped:Connect(Nocl)
+end
+function clip()
+ if Noclip then Noclip:Disconnect() end
+ Clip = true
+end
+noclip() -- to toggle noclip() and clip(
+	end    
+})
+
+Tab:AddToggle({
+	Name = "Server Hop",
+	Default = false,
+	Callback = function(Value)
+	local Http = game:GetService("HttpService")
+local TPS = game:GetService("TeleportService")
+local Api = "https://games.roblox.com/v1/games/"
+local _place = game.PlaceId
+local _servers = Api.._place.."/servers/Public?sortOrder=Asc&limit=100"
+function ListServers(cursor)
+   local Raw = game:HttpGet(_servers .. ((cursor and "&cursor="..cursor) or ""))
+   return Http:JSONDecode(Raw)
+end
+local Server, Next; repeat
+   local Servers = ListServers(Next)
+   Server = Servers.data[1]
+   Next = Servers.nextPageCursor
+until Server
+TPS:TeleportToPlaceInstance(_place,Server.id,game.Players.LocalPlayer)
+	end    
 })
 
 Tab:AddButton({
-	Name = "Auto Detect",
+	Name = "Rejoin",
 	Callback = function()
-      		loadstring(game:HttpGet(('https://pastebin.com/raw/HPNBFGSf'),true))()
+      	local ts = game:GetService("TeleportService")
+local p = game:GetService("Players").LocalPlayer
+ts:Teleport(game.PlaceId, p)
   	end    
 })
 
 Tab:AddButton({
-	Name = "Auto Spam",
+	Name = "Destroy GUI",
 	Callback = function()
-      	loadstring(game:HttpGet("https://pastebin.com/raw/t2391h1A"))()	
+      	orionlib:Destroy()
   	end    
 })
 
 Tab:AddButton({
-	Name = "Aiming Mechanism",
+	Name = "Infinite Jump",
 	Callback = function()
-      		loadstring(game:HttpGet("https://raw.githubusercontent.com/Hosvile/Refinement/main/M%3ABlade%20Ball%20Mechanism",true))()
+      	local InfiniteJumpEnabled = true
+        game:GetService("UserInputService").JumpRequest:connect(function()
+            if InfiniteJumpEnabled then
+                game:GetService"Players".LocalPlayer.Character:FindFirstChildOfClass'Humanoid':ChangeState("Jumping")
+            end
+        end)
   	end    
-})
-
-local Tab = Window:MakeTab({
-	Name = "Auto Clash",
-	Icon = "rbxassetid://4483345998",
-	PremiumOnly = false
-})
-
-local Section = Tab:AddSection({
-	Name = "Auto Clash Section"
 })
 
 Tab:AddButton({
-	Name = "Auto Clash",
+	Name = "Remove Texture",
 	Callback = function()
-      		loadstring(game:HttpGet("https://pastebin.com/raw/t2391h1A"))()
+      	local ToDisable = {
+	Textures = false,
+	VisualEffects = true,
+	Parts = true,
+	Particles = true,
+	Sky = true
+}
+
+local ToEnable = {
+	FullBright = false
+}
+
+local Stuff = {}
+
+for _, v in next, game:GetDescendants() do
+	if ToDisable.Parts then
+		if v:IsA("Part") or v:IsA("Union") or v:IsA("BasePart") then
+			v.Material = Enum.Material.SmoothPlastic
+			table.insert(Stuff, 1, v)
+		end
+	end
+	
+	if ToDisable.Particles then
+		if v:IsA("ParticleEmitter") or v:IsA("Smoke") or v:IsA("Explosion") or v:IsA("Sparkles") or v:IsA("Fire") then
+			v.Enabled = false
+			table.insert(Stuff, 1, v)
+		end
+	end
+	
+	if ToDisable.VisualEffects then
+		if v:IsA("BloomEffect") or v:IsA("BlurEffect") or v:IsA("DepthOfFieldEffect") or v:IsA("SunRaysEffect") then
+			v.Enabled = false
+			table.insert(Stuff, 1, v)
+		end
+	end
+	
+	if ToDisable.Textures then
+		if v:IsA("Decal") or v:IsA("Texture") then
+			v.Texture = ""
+			table.insert(Stuff, 1, v)
+		end
+	end
+	
+	if ToDisable.Sky then
+		if v:IsA("Sky") then
+			v.Parent = nil
+			table.insert(Stuff, 1, v)
+		end
+	end
+end
   	end    
 })
 
-
-Tab:AddButton({
-	Name = "Auto Clash V2",
-	Callback = function()
-      		loadstring(game:HttpGet("https://raw.githubusercontent.com/datshort1/datmodhub/main/AutoClash"))()
-  	end    
-})
+orionlib:Init()
