@@ -1,6 +1,6 @@
 local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
 
-local Window = OrionLib:MakeWindow({Name = "Elijah Hub - Blade Ball", HidePremium = false, SaveConfig = true, IntroEnabled = true, IntroText = Elijah Hub, ConfigFolder = "OrionTest"})
+local Window = OrionLib:MakeWindow({Name = "Elijah Hub - Tower Of Hell", HidePremium = false, SaveConfig = true, IntroEnabled = false, IntroText = "Elijah Hub", ConfigFolder = "OrionTest"})
 
 OrionLib:MakeNotification({
 	Name = "Elijah Hub - Blade Ball",
